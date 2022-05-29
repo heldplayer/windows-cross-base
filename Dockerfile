@@ -33,8 +33,8 @@ RUN set -eu ; \
 
 FROM python:3.10
 
-ARG USER_ID
-ARG USER_GROUP
+ARG USER_ID=1000
+ARG USER_GROUP=1000
 
 COPY --from=downloads llvm.tar.xz /
 RUN set -eu ; \
@@ -47,7 +47,7 @@ RUN pip install ninja pyyaml
 
 RUN set -eu ; \
     groupadd -g $USER_GROUP host-user ; \
-    useradd -M -g $USER_GROUP -u $USER_ID host-user ; \
+    useradd -m -g $USER_GROUP -u $USER_ID host-user ; \
     mkdir /data ; \
     chown host-user:host-user /data
 
