@@ -14,7 +14,7 @@ RUN set -eu ; \
     tar -xzv -f xwin.tar.gz -C /usr/local/bin --strip-components=1 xwin-0.2.1-x86_64-unknown-linux-musl/xwin ; \
     xwin --accept-license --cache-dir /tmp/xwin-cache --temp --arch x86_64,aarch splat --output /xwin
 
-FROM ubuntu:focal AS downloads
+FROM ubuntu:focal AS llvm
 
 RUN set -eu ; \
     apt-get update ; \
@@ -31,23 +31,25 @@ RUN set -eu ; \
     gpg --batch --keyserver keyserver.ubuntu.com --recv-keys $GPG_KEYS ; \
     gpg --batch --verify llvm.tar.xz.sig llvm.tar.xz
 
+FROM python:3.10 AS base
+
+COPY --from=llvm llvm.tar.xz /
+RUN set -eu ; \
+    tar -xf llvm.tar.xz -C /usr/local --strip-components=1
+
 FROM python:3.10
+
+COPY --from=base /usr/local /usr/local
+COPY --from=xwin /xwin /xwin/
 
 ARG USER_ID=1000
 ARG USER_GROUP=1000
-
-COPY --from=downloads llvm.tar.xz /
-RUN set -eu ; \
-    tar -xf llvm.tar.xz -C /usr/local --strip-components=1 ; \
-    rm llvm.tar.xz
-
-COPY --from=xwin /xwin /xwin/
 
 RUN pip install ninja pyyaml
 
 RUN set -eu ; \
     groupadd -g $USER_GROUP host-user ; \
-    useradd -m -g $USER_GROUP -u $USER_ID host-user ; \
+    useradd -m -s /bin/bash -g $USER_GROUP -u $USER_ID host-user ; \
     mkdir /data ; \
     chown host-user:host-user /data
 
